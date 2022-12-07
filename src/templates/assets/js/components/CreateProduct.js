@@ -5,9 +5,8 @@ import Dropzone from 'react-dropzone'
 
 
 const CreateProduct = (props) => {
-
     const [productVariantPrices, setProductVariantPrices] = useState([])
-
+    
     const [productVariants, setProductVariant] = useState([
         {
             option: 1,

@@ -1,4 +1,6 @@
 {% extends 'backend/base.html' %}
+{% load variantFiltering %}
+{% load static %}
 
 {% block title %} Product List {% endblock %}
 
@@ -18,7 +20,13 @@
                 <div class="col-md-2">
                     <select name="variant" id="" class="form-control">
                         <option selected disabled>--Select A Variant--</option>
-
+                        {% for catagory in allVariants %}
+                            <optgroup label={{ catagory.title }}>
+                                {% for subcatagory in allProductVariants|findSubCatarogy:catagory %}
+                                    <option value={{subcatagory.variant_title}}>{{subcatagory.variant_title}}</option>
+                                {% endfor %}
+                            </optgroup>
+                        {% endfor %}
                     </select>
                 </div>
 
@@ -55,50 +63,28 @@
                     </thead>
 
                     <tbody>
+                    {% for product in product_list %}
                     <tr>
-                        <td>1</td>
-                        <td>T-Shirt <br> Created at : 25-Aug-2020</td>
-                        <td>Quality product in low cost</td>
+                        <td>{{product.id}}</td>
+                        <td>{{product.title}}<br> {{product.created_at}}</td>
+                        <td>{{product.description}}</td>
                         <td>
-                            <dl class="row mb-0" style="height: 80px; overflow: hidden" id="variant">
+                            
+                            <dl class="row mb-0" style="height: 80px; overflow: hidden" id="{{product.id}}">
+                                {% for variant in variants|findVariant:product %}
                                 <dt class="col-sm-3 pb-0">
-                                    XL/ Black/ Full
+                                    {{variant.product_variant_one.variant_title}}/ {{variant.product_variant_two.variant_title}}/ {{variant.product_variant_three.variant_title}}
                                 </dt>
                                 <dd class="col-sm-9">
                                     <dl class="row mb-0">
-                                        <dd class="col-sm-4 pb-0">Price : 200.0</dd>
-                                        <dd class="col-sm-8 pb-0">InStock : 50.</dd>
+                                        <dd class="col-sm-4 pb-0">Price : {{variant.price}}</dd>
+                                        <dd class="col-sm-8 pb-0">InStock : {{variant.stock}}</dd>
                                     </dl>
                                 </dd>
-                                <dt class="col-sm-3 pb-0">
-                                    XL/ Black/ Half
-                                </dt>
-                                <dd class="col-sm-9">
-                                    <dl class="row mb-0">
-                                        <dd class="col-sm-4 pb-0">Price : 200.0</dd>
-                                        <dd class="col-sm-8 pb-0">InStock : 50.</dd>
-                                    </dl>
-                                </dd>
-                                <dt class="col-sm-3 pb-0">
-                                    L/ Black/ Full
-                                </dt>
-                                <dd class="col-sm-9">
-                                    <dl class="row mb-0">
-                                        <dd class="col-sm-4 pb-0">Price : 200.0</dd>
-                                        <dd class="col-sm-8 pb-0">InStock : 50.</dd>
-                                    </dl>
-                                </dd>
-                                <dt class="col-sm-3 pb-0">
-                                    L/ Black/ Half
-                                </dt>
-                                <dd class="col-sm-9">
-                                    <dl class="row mb-0">
-                                        <dd class="col-sm-4 pb-0">Price : 200.0</dd>
-                                        <dd class="col-sm-8 pb-0">InStock : 50.</dd>
-                                    </dl>
-                                </dd>
+                                {% endfor %}
                             </dl>
-                            <button onclick="$('#variant').toggleClass('h-auto')" class="btn btn-sm btn-link">Show more
+                            
+                            <button onclick="$('#{{product.id}}').toggleClass('h-auto')" class="btn btn-sm btn-link">Show more
                             </button>
                         </td>
                         <td>
@@ -107,22 +93,49 @@
                             </div>
                         </td>
                     </tr>
+                    {% endfor %}
                     </tbody>
-
                 </table>
             </div>
-
         </div>
-
+        
         <div class="card-footer">
             <div class="row justify-content-between">
                 <div class="col-md-6">
-                    <p>Showing 1 to 10 out of 100</p>
+                    <p id="contentRange">Loading...</p>
                 </div>
                 <div class="col-md-2">
-
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item"><a class="page-link" href="?page={{page_obj.previous_page_number}}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&laquo;</a></li>
+                            {% else %}
+                                <li class="page-item"><a class="page-link" href="#">&laquo;</a></li>
+                            {% endif %}
+                            {% for page in page_obj.paginator.page_range %}
+                                {% if forloop.counter != 1 %}  {% endif %}
+                                <li class="page-item"><a class="page-link" href="?page={{page}}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{page}}</a></li>
+                            {% endfor %}
+                            {% if page_obj.has_next %}
+                                <li class="page-item"><a class="page-link" href="?page={{page_obj.next_page_number}}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&raquo;</a></li>
+                            {% else %}
+                                <li class="page-item"><a class="page-link" href="#">&raquo;</a></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        const currentPageNumber = {{ page_obj.number }};
+        const paginatorRange = {{ pageContentCount }};
+        const totalObjects = {{ totalObjects }};
+        const start = ((currentPageNumber - 1) * paginatorRange) + 1;
+        const end = start + Math.min(paginatorRange, totalObjects) - 1;
+
+        element = document.getElementById("contentRange");
+        element.innerHTML = "Showing " + start + " to " + end + " out of " + totalObjects;
+    </script>
 {% endblock %}
