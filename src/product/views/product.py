@@ -1,5 +1,4 @@
 from django.views import generic
-
 from product.models import Variant, Product, ProductVariantPrice, ProductVariant
 from django.db.models import Q
 from datetime import datetime
@@ -8,12 +7,25 @@ from datetime import datetime
 class CreateProductView(generic.TemplateView):
     template_name = 'products/create.html'
 
+    def get_product_variants(self):
+        activeVariants = Variant.objects.filter(active=True).values('id', 'title')
+        catarogy = {}
+        for variant in activeVariants:
+            filtered_data = set()
+            allvariants = list(ProductVariant.objects.filter(variant__id = variant['id']).values('variant_title'))
+            for variantsInfo in allvariants:
+               filtered_data.add(variantsInfo['variant_title'])
+            catarogy[variant['title']] = list(filtered_data)
+        return catarogy
+
     def get_context_data(self, **kwargs):
         context = super(CreateProductView, self).get_context_data(**kwargs)
         variants = Variant.objects.filter(active=True).values('id', 'title')
         context['product'] = True
         context['variants'] = list(variants.all())
+        context['allProductVariants'] = self.get_product_variants()
         return context
+
 
 
 class ListProductView(generic.list.ListView):
@@ -22,6 +34,7 @@ class ListProductView(generic.list.ListView):
     ordering = ['id']
     paginate_by = 2
 
+
     def get_query_strings(self):
         title = self.request.GET.get('title','')
         varient = self.request.GET.get('variant','')
@@ -29,6 +42,7 @@ class ListProductView(generic.list.ListView):
         price_to = self.request.GET.get('price_to')
         date = self.request.GET.get('date','')
         return (title, varient, price_from, price_to, date)
+
 
     def get_filtered_data(self):
         title, varient, price_from, price_to, date = self.get_query_strings()
@@ -48,7 +62,7 @@ class ListProductView(generic.list.ListView):
             if date:
                 date = "/".join(date.split("-"))
                 date = datetime.strptime(date, '%Y/%m/%d')
-                q = q.filter(updated_at__gte = date)
+                q = q.filter(created_at__gte = date)
 
             p = set()
             for obj in q:
@@ -58,25 +72,22 @@ class ListProductView(generic.list.ListView):
 
 
     def get_queryset(self):
-        if self.request.method == "GET":
-            title, varient, price_from, price_to, date = self.get_query_strings()
-            q, p = self.get_filtered_data()
-            if p:
-                queryset = Product.objects.filter(pk__in=p)
-            else:
-                queryset = Product.objects.all()
-            return queryset
+        q, p = self.get_filtered_data()
+        print(p)
+        if p:
+            queryset = Product.objects.filter(pk__in=p)
+        elif q:
+            queryset = Product.objects.all()
+        else:
+            queryset = []
+        return queryset
 
     def get_context_data(self, **kwargs):
-        if self.request.method == "GET":
-            title, varient, price_from, price_to, date = self.get_query_strings()
-            q, p = self.get_filtered_data()
-
-
+        q, p = self.get_filtered_data()
         context = super(ListProductView,self).get_context_data(**kwargs)
         context['variants'] = q
         context['pageContentCount'] = 2
-        context['totalObjects'] = len(p) if p else len(Product.objects.all())
+        context['totalObjects'] = len(p) if p else 0 if not q else len(Product.objects.all())
         context['allVariants'] = Variant.objects.all()
         context['allProductVariants'] = ProductVariant.objects.order_by().values('variant_title').distinct()
         return context

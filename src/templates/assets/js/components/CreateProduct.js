@@ -6,14 +6,14 @@ import Dropzone from 'react-dropzone'
 
 const CreateProduct = (props) => {
     const [productVariantPrices, setProductVariantPrices] = useState([])
-    
+
     const [productVariants, setProductVariant] = useState([
         {
             option: 1,
             tags: []
         }
     ])
-    console.log(typeof props.variants)
+    //console.log(typeof props.variants)
     // handle click event of the Add button
     const handleAddClick = () => {
         let all_variants = JSON.parse(props.variants.replaceAll("'", '"')).map(el => el.id)
@@ -77,6 +77,20 @@ const CreateProduct = (props) => {
     let saveProduct = (event) => {
         event.preventDefault();
         // TODO : write your code here to save the product
+        // Check if xhr call works to send data to backend
+        let xhr = new XMLHttpRequest()
+        xhr.open("GET", "http://127.0.0.1:8000/product/list/");
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        let data = `{
+            "Id": 78912,
+            "Customer": "Jason Sweet",
+            "Quantity": 1,
+            "Price": 18.00
+          }`;
+          
+        xhr.send(data);
     }
 
 
